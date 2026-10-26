@@ -1,3 +1,9 @@
+# HarmonyOS Fork
+
+This repository focuses on the HarmonyOS remote Agent client. Read [agent.md](./agent.md) for project architecture, native SSH and credential constraints, keyboard handling, build commands, and device validation. The project overview and supported scope are in [README.md](./README.md).
+
+Reuse the original renderer. Preserve the desktop, remote, and mobile behavior covered by the rules below when changing code used by more than the HarmonyOS entry point.
+
 # Useful Commands
 
 - **Typecheck**: `pnpm tc` (or `tc:node` / `tc:cli` / `tc:web`)
@@ -61,7 +67,7 @@ All changes must consider folder workspaces as well as git worktrees. Don't assu
 
 If changing code around `git`, `gh`, source-control, or review behavior read [`docs/reference/git-workflow.md`](./docs/reference/git-workflow.md).
 
-For a failed GitHub Actions run, inspect the failed jobs and retry with `gh run rerun <run-id> --failed --repo stablyai/orca`. Preserve successful jobs; use a full rerun only when the failure requires revalidating them. A code fix needs a new push and fresh checks, not a retry of the old SHA.
+For a failed GitHub Actions run in this fork, inspect the failed jobs and retry with `gh run rerun <run-id> --failed --repo xxay-16/orca-harmonyos`. Preserve successful jobs; use a full rerun only when the failure requires revalidating them. A code fix needs a new push and fresh checks, not a retry of the old SHA.
 
 # Tests
 
