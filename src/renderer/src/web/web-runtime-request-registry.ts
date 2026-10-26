@@ -3,6 +3,14 @@ import type { WebRuntimePendingRequest } from './web-runtime-connection-frame-ro
 
 const REQUEST_TIMEOUT_MS = 30_000
 
+export function createWebRuntimeRequestIds(): () => string {
+  let counter = 0
+  return () => {
+    counter++
+    return `web-rpc-${counter}-${Date.now()}`
+  }
+}
+
 type WebRuntimeRequestRegistryOptions = {
   deviceToken: string
   nextId: () => string

@@ -1,5 +1,4 @@
 import type { PairedRuntimeConnection } from '../../../shared/paired-runtime-connection'
-import { withReconnectJitter } from '../../../shared/reconnect-jitter'
 import { WebRuntimeConnectionHeartbeat } from './web-runtime-connection-heartbeat'
 import {
   routeWebRuntimeConnectionFrame,
@@ -19,12 +18,15 @@ import { WEB_PAIRED_E2EE_PRIMITIVES } from './web-paired-e2ee-primitives'
 import { withWebClientUpgradeMarker } from '../../../shared/web-origin-security'
 import type { WebRuntimeTransportSubscription } from './web-runtime-subscription-contract'
 import { WebRuntimeSubscriptionRegistry } from './web-runtime-subscription-registry'
-import { WebRuntimeRequestRegistry } from './web-runtime-request-registry'
+import {
+  WebRuntimeRequestRegistry,
+  createWebRuntimeRequestIds
+} from './web-runtime-request-registry'
 import { WebRuntimeConnectionWaiters } from './web-runtime-connection-waiters'
+import { WebRuntimeEndpointOwner } from './web-runtime-endpoint-provider'
 
 const CONNECT_TIMEOUT_MS = 12_000
 const HANDSHAKE_TIMEOUT_MS = 10_000
-const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 8000, 15_000]
 
 export class WebRuntimeConnectionTransport {
   ws: WebSocket | null = null
@@ -33,9 +35,9 @@ export class WebRuntimeConnectionTransport {
   state: WebRuntimeConnectionState = 'disconnected'
   readonly subscriptions: Map<string, WebRuntimeTransportSubscription>
   readonly heartbeat: WebRuntimeConnectionHeartbeat
-  private requestCounter = 0
-  private reconnectAttempt = 0
+  readonly nextId = createWebRuntimeRequestIds()
   private intentionallyClosed = false
+  private readonly endpoints = new WebRuntimeEndpointOwner()
   private readonly timers = new WebRuntimeConnectionTimers()
   private readonly subscriptionRegistry: WebRuntimeSubscriptionRegistry
   readonly requestRegistry: WebRuntimeRequestRegistry
@@ -89,7 +91,9 @@ export class WebRuntimeConnectionTransport {
 
   close(options: { notifySubscriptions?: boolean } = {}): void {
     this.intentionallyClosed = true
-    this.clearTimers()
+    this.endpoints.close()
+    this.timers.clearAll()
+    this.heartbeat.clear()
     this.requestRegistry.rejectAll('Remote Orca runtime connection closed.')
     this.connectionWaiters.rejectAll(new Error('Remote Orca runtime connection closed.'))
     this.subscriptionRegistry.close(options.notifySubscriptions ?? true)
@@ -125,7 +129,7 @@ export class WebRuntimeConnectionTransport {
         // Why reconnect either way: the next socket authenticates with the key or the token.
         reconnect: () => {
           if (this.ws === socket) {
-            this.reconnectAttempt = 0
+            this.timers.resetReconnect()
             socket.close()
             this.handleSocketClosed(socket)
           }
@@ -135,7 +139,7 @@ export class WebRuntimeConnectionTransport {
       return
     }
     this.timers.clear('handshake')
-    this.reconnectAttempt = 0
+    this.timers.resetReconnect()
     this.setState('connected')
   }
 
@@ -158,6 +162,7 @@ export class WebRuntimeConnectionTransport {
       return
     }
     this.auth.socketClosed()
+    this.endpoints.release()
     this.ws = null
     this.handshake = null
     this.timers.clear('connect')
@@ -191,17 +196,33 @@ export class WebRuntimeConnectionTransport {
       return
     }
     this.auth.open((plan) => {
-      if (!this.intentionallyClosed && !this.ws) {
-        this.openSocket(plan)
+      if (this.intentionallyClosed || this.ws) {
+        return
       }
+      this.endpoints.open(this.connection, {
+        ready: (endpoint) => this.openSocket(plan, endpoint),
+        waiting: () => this.setState('connecting'),
+        failed: (error, fatal) => {
+          if (fatal || this.lifecycle.reconnect === false) {
+            this.requestRegistry.rejectAll(error.message)
+            this.connectionWaiters.rejectAll(error)
+          }
+          this.intentionallyClosed ||= fatal
+          this.setState('disconnected')
+          if (!fatal) {
+            this.scheduleReconnect()
+          }
+        }
+      })
     })
   }
 
-  private openSocket(plan: WebRuntimeAuthPlan): void {
+  private openSocket(plan: WebRuntimeAuthPlan, endpoint = this.connection.endpoint): void {
     let socket: WebSocket
     try {
-      socket = new WebSocket(withWebClientUpgradeMarker(this.connection.endpoint))
+      socket = new WebSocket(withWebClientUpgradeMarker(endpoint))
     } catch (error) {
+      this.endpoints.release()
       this.requestRegistry.rejectAll(error instanceof Error ? error.message : String(error))
       this.scheduleReconnect()
       return
@@ -290,27 +311,9 @@ export class WebRuntimeConnectionTransport {
   }
 
   private scheduleReconnect(): void {
-    if (
-      this.timers.has('reconnect') ||
-      this.intentionallyClosed ||
-      this.lifecycle.reconnect === false
-    ) {
+    if (this.intentionallyClosed || this.lifecycle.reconnect === false) {
       return
     }
-    const delay = withReconnectJitter(
-      RECONNECT_DELAYS_MS[Math.min(this.reconnectAttempt, RECONNECT_DELAYS_MS.length - 1)]
-    )
-    this.reconnectAttempt += 1
-    this.timers.arm('reconnect', delay, () => this.openConnection())
-  }
-
-  nextId(): string {
-    this.requestCounter += 1
-    return `web-rpc-${this.requestCounter}-${Date.now()}`
-  }
-
-  private clearTimers(): void {
-    this.timers.clearAll()
-    this.heartbeat.clear()
+    this.timers.armReconnect(() => this.openConnection())
   }
 }

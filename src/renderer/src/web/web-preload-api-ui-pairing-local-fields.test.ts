@@ -74,6 +74,69 @@ describe('web UI preload API pairing-local fields', () => {
     manuallyUnreadTurnsByPaneKey: { 'tab-2:leaf-2': 654 }
   }
 
+  it('keeps native layout on the client and excludes it from acknowledged host writes', async () => {
+    const globals = installBrowserGlobals('Linux')
+    writeStoredRuntimeEnvironment(globals.storage)
+    globals.storage.setItem(
+      'orca.web.ui.v1',
+      JSON.stringify({
+        rightSidebarOpen: false,
+        rightSidebarWidth: 280,
+        sidebarWidth: 240,
+        setupGuideSidebarDismissed: true,
+        statusBarItems: []
+      })
+    )
+    runtimeClient.call.mockImplementation(async (method) => ({
+      id: method,
+      ok: true,
+      result: {
+        ui: {
+          rightSidebarOpen: true,
+          rightSidebarWidth: 500,
+          sidebarWidth: 400,
+          setupGuideSidebarDismissed: false,
+          statusBarItems: ['claude']
+        }
+      },
+      _meta: { runtimeId: 'runtime-1' }
+    }))
+    const { installWebPreloadApi } = await import('./web-preload-api')
+    installWebPreloadApi({ clientLocalLayout: true })
+    await expect(globals.window.api.ui.get()).resolves.toMatchObject({
+      rightSidebarOpen: false,
+      sidebarWidth: 240,
+      setupGuideSidebarDismissed: true,
+      statusBarItems: []
+    })
+    await expect(
+      globals.window.api.ui.recordFeatureInteraction('terminal-tabs')
+    ).resolves.toMatchObject({
+      rightSidebarOpen: false,
+      setupGuideSidebarDismissed: true,
+      statusBarItems: []
+    })
+    expect(JSON.parse(globals.storage.getItem('orca.web.ui.v1') ?? '{}')).toMatchObject({
+      rightSidebarOpen: false,
+      setupGuideSidebarDismissed: true,
+      statusBarItems: []
+    })
+    const write = globals.window.api.ui.setWithAck
+    if (!write) {
+      throw new Error('Missing acknowledged UI writer')
+    }
+    await write({ rightSidebarOpen: true, sidebarWidth: 260, activeView: 'terminal' })
+    expect(runtimeClient.call).toHaveBeenCalledWith(
+      'ui.set',
+      { activeView: 'terminal' },
+      expect.anything()
+    )
+    await expect(globals.window.api.ui.get()).resolves.toMatchObject({
+      rightSidebarOpen: true,
+      sidebarWidth: 260
+    })
+  })
+
   it.each(
     PAIRING_LOCAL_UI_FIELDS.flatMap((field) =>
       (['set', 'setWithAck'] as const).map((method) => [field, method] as const)

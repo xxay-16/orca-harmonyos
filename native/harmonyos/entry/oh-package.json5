@@ -1,0 +1,11 @@
+{
+  "name": "orca-remote-entry",
+  "version": "0.1.0",
+  "description": "Orca Remote HarmonyOS entry module",
+  "main": "",
+  "author": "xxay16",
+  "license": "MIT",
+  "dependencies": {
+    "liborcassh.so": "file:./src/main/cpp/types/liborcassh"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "远程 Agent 工作台"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "连接远程主机上的编程 Agent"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "Orca Remote"
+    }
+  ]
+}

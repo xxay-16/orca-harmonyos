@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { FolderWorkspace } from '../../../shared/folder-workspace-types'
 import type { ProjectGroup } from '../../../shared/project-group-types'
 import type { ProjectHostSetup } from '../../../shared/project-types'
@@ -100,6 +100,18 @@ describe('adoptFromEndpoint', () => {
   })
 
   describe('projectGroup', () => {
+    it('keeps the authenticated runtime owner stamped by the paired-web preload', () => {
+      vi.stubGlobal('__ORCA_WEB_CLIENT__', true)
+      try {
+        const adopted = adoptFromEndpoint(LOCAL, {
+          kind: 'projectGroup',
+          row: group({ executionHostId: 'runtime:env-a' })
+        })
+        expect(adopted.executionHostId).toBe('runtime:env-a')
+      } finally {
+        vi.unstubAllGlobals()
+      }
+    })
     it.each([
       ['local row', LOCAL, group(), 'local'],
       [

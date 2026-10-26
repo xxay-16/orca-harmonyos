@@ -9,6 +9,7 @@ import type { ProjectHostSetup } from '../../../shared/project-types'
 import type { Repo } from '../../../shared/repo-types'
 import {
   LOCAL_EXECUTION_HOST_ID,
+  parseExecutionHostId,
   toSshExecutionHostId,
   type ExecutionHostId
 } from '../../../shared/execution-host'
@@ -19,6 +20,7 @@ import {
 import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import type { WorktreeSortOrderUpdate } from '../../../shared/worktree/sort-order-update'
 import { getRuntimeTargetHostId } from '../runtime/runtime-client-target'
+import { isPairedWebClientWindow } from '../lib/desktop-window-chrome'
 
 export type FetchedRepo = { kind: 'repo'; row: Repo }
 export type FetchedProjectGroup = { kind: 'projectGroup'; row: ProjectGroup }
@@ -117,6 +119,12 @@ export function adoptFromEndpoint(
 function adoptProjectGroup(target: RuntimeClientTarget, projectGroup: ProjectGroup): ProjectGroup {
   if (target.kind === 'environment') {
     return { ...projectGroup, executionHostId: getRuntimeTargetHostId(target) }
+  }
+  if (
+    isPairedWebClientWindow() &&
+    parseExecutionHostId(projectGroup.executionHostId)?.kind === 'runtime'
+  ) {
+    return projectGroup
   }
   if (projectGroup.connectionId) {
     return { ...projectGroup, executionHostId: toSshExecutionHostId(projectGroup.connectionId) }

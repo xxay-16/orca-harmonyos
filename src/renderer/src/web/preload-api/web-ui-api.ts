@@ -29,14 +29,16 @@ import { readLocalWebUIState } from './web-preferences-store'
 import { callRuntimeResult } from './web-runtime-calls'
 import { requireActiveEnvironmentOrNull } from './web-runtime-session'
 import { UI_STORAGE_KEY, noopUnsubscribe, writeJson } from './web-storage'
+import { readClientLayout, omitClientLayout } from './web-client-layout'
 
 /** Combines browser-local preferences with host persistence; acknowledged writes remain distinct from best-effort writes. */
-export function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
+export function createWebUiApi(options: { clientLocalLayout?: boolean } = {}): PreloadApi['ui'] {
   const explorerRoots = createWebExplorerRootSync()
   /** Captures the target host and strips browser-local or unsupported fields before sending a UI update. */
   const prepareHostUpdates = (updates: Parameters<PreloadApi['ui']['set']>[0]) => {
     const environmentId = requireActiveEnvironmentOrNull()?.id
-    const hostUpdates = omitPairingLocalUiFields(updates)
+    const clientUpdates = options.clientLocalLayout ? omitClientLayout(updates) : updates
+    const hostUpdates = omitPairingLocalUiFields(clientUpdates)
     explorerRoots.prepare(environmentId, hostUpdates)
     return { environmentId, hostUpdates }
   }
@@ -58,6 +60,7 @@ export function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
         const local = readLocalWebUIState()
         const next = {
           ...mergeHostWebUIState(local, result.ui),
+          ...(options.clientLocalLayout ? readClientLayout(local) : {}),
           osc52ClipboardDefaultOnNoticePending: mergeOsc52ClipboardNoticePending(local, result.ui),
           featureInteractions: mergeFeatureInteractionState(
             local.featureInteractions,
@@ -128,6 +131,7 @@ export function createWebUiApi(): NonNullable<Partial<PreloadApi>['ui']> {
         const local = readLocalWebUIState()
         const next = {
           ...mergeHostWebUIState(local, result.ui),
+          ...(options.clientLocalLayout ? readClientLayout(local) : {}),
           osc52ClipboardDefaultOnNoticePending: mergeOsc52ClipboardNoticePending(local, result.ui),
           featureInteractions: mergeFeatureInteractionState(
             local.featureInteractions,

@@ -1,0 +1,6 @@
+{
+  "libssh2Commit": "298b8b15ed2c24f34ae2b8c27c5587896d43bfba",
+  "libssh2ArchiveSha256": "33af62bf47ccb2291259f65be776961503e8a682c384a0b7ded8549c0dfd7752",
+  "mbedtlsVersion": "3.6.7",
+  "mbedtlsArchiveSha256": "a7e8bcbec0e6f761b4af24f25677626b35f762f68eef79c08677a363212d11f6"
+}

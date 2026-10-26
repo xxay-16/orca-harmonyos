@@ -5,6 +5,8 @@ vi.mock('@/i18n/i18n', () => ({ translate: (_key: string, fallback: string) => f
 import {
   readStoredWebRuntimeEnvironment,
   saveStoredWebRuntimeEnvironment,
+  installWebRuntimeEnvironmentPersistence,
+  clearStoredWebRuntimeEnvironment,
   type StoredWebRuntimeEnvironment
 } from './web-runtime-environment'
 
@@ -66,5 +68,25 @@ describe('a migrated pairing never gets its code back', () => {
       pairingRevision: 6,
       endpoints: [{ deviceToken: 'fresh-code' }]
     })
+  })
+
+  it('keeps native credentials out of localStorage even when the caller omits sessionOnly', () => {
+    const save = vi.fn()
+    const clear = vi.fn()
+    const restore = installWebRuntimeEnvironmentPersistence({ save, clear })
+    try {
+      const next = environment('native-secret-code', 10)
+      saveStoredWebRuntimeEnvironment(next)
+      expect(save).toHaveBeenCalledWith(next)
+      expect(window.localStorage.getItem('orca.web.runtimeEnvironment.v1')).toBeNull()
+      expect(readStoredWebRuntimeEnvironment()?.endpoints[0]?.deviceToken).toBe(
+        'native-secret-code'
+      )
+      clearStoredWebRuntimeEnvironment()
+      expect(clear).toHaveBeenCalledOnce()
+      expect(readStoredWebRuntimeEnvironment()).toBeNull()
+    } finally {
+      restore()
+    }
   })
 })

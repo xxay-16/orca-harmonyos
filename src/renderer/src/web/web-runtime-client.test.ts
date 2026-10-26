@@ -1,3 +1,4 @@
+import { fakeSockets, FakeWebSocket, installWebRuntimeTestSocket } from './web-runtime-test-socket'
 import { AGENT_SESSION_COHERENT_MODEL_CATALOG_CAPABILITY } from '../../../shared/structured-agent-session-surface-capabilities'
 import { pairedRuntimeConnectionFromOffer } from '../../../shared/paired-runtime-connection'
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest'
@@ -35,40 +36,8 @@ import { TERMINAL_QUICK_COMMAND_LONG_PROMPTS_RUNTIME_CAPABILITY } from '../../..
 import { AGENT_SESSION_BACKGROUND_TASK_CHILD_VIEWS_CAPABILITY } from '../../../shared/agent-session-background-task-child-views-capability'
 import { AGENT_SESSION_CURRENT_REQUESTS_CLIENT_CAPABILITY } from '../../../shared/agent-session-current-requests-capability'
 
-const fakeSockets: FakeWebSocket[] = []
-
-class FakeWebSocket {
-  static readonly CONNECTING = 0
-  static readonly OPEN = 1
-  readyState = FakeWebSocket.CONNECTING
-  binaryType = 'arraybuffer'
-  onopen: (() => void) | null = null
-  onmessage: ((event: { data: unknown }) => void) | null = null
-  onclose: (() => void) | null = null
-  onerror: (() => void) | null = null
-  close = vi.fn()
-  send = vi.fn()
-
-  constructor(readonly _url: string) {
-    fakeSockets.push(this)
-  }
-}
-
 describe('WebRuntimeClient', () => {
-  beforeEach(() => {
-    fakeSockets.length = 0
-    vi.stubGlobal('window', {
-      setTimeout,
-      clearTimeout,
-      // Why: the connected-state liveness heartbeat arms a window.setInterval, so
-      // the stub must provide interval timers once a client reaches 'connected'.
-      setInterval,
-      clearInterval,
-      atob: (value: string) => Buffer.from(value, 'base64').toString('binary'),
-      btoa: (value: string) => Buffer.from(value, 'binary').toString('base64')
-    })
-    vi.stubGlobal('WebSocket', FakeWebSocket)
-  })
+  beforeEach(installWebRuntimeTestSocket)
 
   afterEach(() => {
     vi.unstubAllGlobals()

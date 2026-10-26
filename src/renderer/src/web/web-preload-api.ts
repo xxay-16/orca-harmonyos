@@ -39,6 +39,10 @@ import { createWebOrcaProfilesApi } from './preload-api/web-orca-profiles-api'
 import { createWebPlatformApi } from './preload-api/web-platform-api'
 import { createRateLimitsApi } from './preload-api/web-rate-limits-api'
 import { createReposApi } from './preload-api/web-repositories-api'
+import {
+  createWebFolderWorkspacesApi,
+  createWebProjectGroupsApi
+} from './preload-api/web-folder-workspaces-api'
 import { createHooksApi, createRuntimeNamespaceApi } from './preload-api/web-review-api'
 import { createWebJiraApi } from './preload-api/web-jira-api'
 import { callRuntimeResult } from './preload-api/web-runtime-calls'
@@ -57,14 +61,17 @@ import { createWebWorkspaceSessionApi } from './preload-api/web-workspace-sessio
 import { createWorktreesApi } from './preload-api/web-worktrees-api'
 import { readStoredWebRuntimeEnvironment } from './web-runtime-environment'
 
-export function installWebPreloadApi(): void {
+export type WebPreloadOptions = { clientLocalLayout?: boolean }
+
+export function installWebPreloadApi(options: WebPreloadOptions = {}): void {
   webRuntimeState.activeEnvironment = readStoredWebRuntimeEnvironment()
   const webWindow = window as unknown as { __ORCA_WEB_CLIENT__?: boolean }
   webWindow.__ORCA_WEB_CLIENT__ = true
-  window.api = withFallback(createWebPreloadApi(), []) as PreloadApi
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: withFallback supplies the remaining desktop methods.
+  window.api = withFallback(createWebPreloadApi(options), []) as PreloadApi
 }
 
-function createWebPreloadApi(): Partial<PreloadApi> {
+function createWebPreloadApi(options: WebPreloadOptions): Partial<PreloadApi> {
   return {
     ...createWebAppApi(),
     ...createWebStarNagApi(),
@@ -74,7 +81,7 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     ...createWebE2EApi(),
     ...createWebSettingsApi(),
     keybindings: createWebKeybindingsApi(),
-    ui: createWebUiApi(),
+    ui: createWebUiApi(options),
     ...createWebDiagnosticsApi(),
     ...createWebWorkspaceSessionApi(),
     ...createWebOnboardingApi(),
@@ -83,6 +90,8 @@ function createWebPreloadApi(): Partial<PreloadApi> {
     nativeChat: createWebNativeChatApi(),
     runtimeEnvironments: createRuntimeEnvironmentsApi(),
     repos: createReposApi(),
+    projectGroups: createWebProjectGroupsApi(),
+    folderWorkspaces: createWebFolderWorkspacesApi(),
     worktrees: createWorktreesApi(),
     fs: createFileApi(),
     git: createGitApi(),

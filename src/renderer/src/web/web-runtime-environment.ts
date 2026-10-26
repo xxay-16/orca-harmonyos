@@ -35,6 +35,21 @@ const ENVIRONMENT_STORAGE_KEY = 'orca.web.runtimeEnvironment.v1'
 
 // Why memory: a session-only pairing's code must not outlive the page (#17399).
 let sessionEnvironment: StoredWebRuntimeEnvironment | null = null
+type EnvironmentPersistence = {
+  save(environment: StoredWebRuntimeEnvironment): void
+  clear(environment: StoredWebRuntimeEnvironment | null): void
+}
+let environmentPersistence: EnvironmentPersistence | null = null
+
+export function installWebRuntimeEnvironmentPersistence(next: EnvironmentPersistence): () => void {
+  const previous = environmentPersistence
+  environmentPersistence = next
+  return () => {
+    if (environmentPersistence === next) {
+      environmentPersistence = previous
+    }
+  }
+}
 
 export function readStoredWebRuntimeEnvironment(): StoredWebRuntimeEnvironment | null {
   if (sessionEnvironment) {
@@ -82,6 +97,16 @@ export function readStoredWebRuntimeEnvironment(): StoredWebRuntimeEnvironment |
 }
 
 export function saveStoredWebRuntimeEnvironment(environment: StoredWebRuntimeEnvironment): void {
+  if (environmentPersistence) {
+    const stored = readStoredWebRuntimeEnvironment()
+    if (stored?.id === environment.id && pairingRevision(stored) > pairingRevision(environment)) {
+      return
+    }
+    environmentPersistence.save(environment)
+    sessionEnvironment = { ...environment, sessionOnly: true }
+    window.localStorage.removeItem(ENVIRONMENT_STORAGE_KEY)
+    return
+  }
   if (environment.sessionOnly) {
     sessionEnvironment = environment
     // Why: a new session pairing replaces whatever older pairing (and its code) was stored.
@@ -125,6 +150,7 @@ function pairingRevision(environment: StoredWebRuntimeEnvironment): number {
 }
 
 export function clearStoredWebRuntimeEnvironment(): void {
+  environmentPersistence?.clear(sessionEnvironment)
   sessionEnvironment = null
   window.localStorage.removeItem(ENVIRONMENT_STORAGE_KEY)
 }
