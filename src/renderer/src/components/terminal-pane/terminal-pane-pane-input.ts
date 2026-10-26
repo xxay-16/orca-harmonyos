@@ -14,6 +14,7 @@ import { installTerminalImeNativeTextForwarder } from './terminal-ime-native-tex
 import { installTerminalIosHangulPreedit } from './terminal-ios-hangul-preedit'
 import { createTerminalIosHangulPreeditRenderer } from './terminal-ios-hangul-preedit-overlay'
 import { isCurrentPlatformIosWeb } from '@/lib/ios-web-platform'
+import { isHarmonyWebPlatform } from '@/lib/harmony-web-platform'
 import { resolveTerminalJisYenInput } from './terminal-jis-yen-input'
 import {
   isNonLatinControlChordKeyup,
@@ -58,6 +59,7 @@ export function installTerminalPaneInputHandling(context: PaneInputContext): voi
   const isLinux =
     !isMac && navigator.userAgent.includes('Linux') && !/Android|CrOS/.test(navigator.userAgent)
   const isIosWeb = isCurrentPlatformIosWeb()
+  const isHarmonyWeb = isHarmonyWebPlatform(navigator.userAgent)
   const imeCompositionTracker = installTerminalImeCompositionTracker(pane.terminal.element)
   const imeComposerPlaceholderMask = installTerminalImeComposerPlaceholderMask(pane.terminal)
   const iosHangulPreedit = isIosWeb
@@ -80,7 +82,7 @@ export function installTerminalPaneInputHandling(context: PaneInputContext): voi
   })
   // Why Linux too: fcitx4 commits a candidate pick as the Space/digit keydown's insertText (#28213).
   const imeNativeTextForwarder =
-    (isMac || isLinux) && !isIosWeb
+    (isMac || isLinux || isHarmonyWeb) && !isIosWeb
       ? installTerminalImeNativeTextForwarder({
           terminalElement: pane.terminal.element,
           isComposing: () => imeCompositionTracker.isActive(),
@@ -105,7 +107,8 @@ export function installTerminalPaneInputHandling(context: PaneInputContext): voi
         imeCompositionTracker.isCandidateKeyGuardActive() || pendingCandidateReleaseGuardActive,
       pendingCandidateKeyReleaseActive: pendingCandidateReleaseGuardActive,
       isMac,
-      isLinux
+      isLinux,
+      isHarmonyWeb
     }
     if (shouldSuppressTerminalImeKeyboardEvent(event, imeKeyboardOptions)) {
       clearTerminalImePendingCandidateKeyRelease(pendingTerminalImeCandidateKeyReleases, event)

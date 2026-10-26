@@ -1,3 +1,5 @@
+import { isHarmonyWebPlatform } from '../../lib/harmony-web-platform'
+
 export const SETTINGS_STORAGE_KEY = 'orca.web.settings.v1'
 
 export const UI_STORAGE_KEY = 'orca.web.ui.v1'
@@ -14,7 +16,7 @@ export function getBrowserPlatform(): NodeJS.Platform {
   if (navigator.userAgent.includes('Windows')) {
     return 'win32'
   }
-  if (navigator.userAgent.includes('Linux')) {
+  if (navigator.userAgent.includes('Linux') || isHarmonyWebPlatform(navigator.userAgent)) {
     return 'linux'
   }
   return 'darwin'

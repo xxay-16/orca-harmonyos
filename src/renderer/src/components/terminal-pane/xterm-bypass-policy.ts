@@ -56,6 +56,7 @@ export type XtermImeKeyboardOptions = {
   // macOS; the Windows-only suppression guards its preedit-diff race (preedit
   // can hit the textarea before compositionstart and be flushed by the diff).
   isLinux: boolean
+  isHarmonyWeb?: boolean
 }
 
 export const TERMINAL_INTERRUPT_INPUT = '\x03'
@@ -149,7 +150,8 @@ export function shouldSuppressTerminalImeKeyboardEvent(
   // diff (macOS: first key after an input-source switch; Linux: Sogou/fcitx
   // candidate commits outside a composition session). Windows keeps full
   // suppression until verified against its preedit-diff race.
-  const passesStandalone229Keydown = isMac || isLinux
+  // ArkWeb commits physical-keyboard text through standalone 229 + insertText too.
+  const passesStandalone229Keydown = isMac || isLinux || options.isHarmonyWeb === true
   const passesIdleComposing229Keydown =
     event.type === 'keydown' &&
     event.keyCode === 229 &&

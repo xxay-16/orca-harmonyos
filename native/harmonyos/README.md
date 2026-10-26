@@ -48,6 +48,6 @@ pnpm exec vitest run --config config/vitest.config.ts src/renderer/src/web/web-r
 
 真机检查使用 DevEco CLI，以及调试构建的 ArkWeb CDP / Playwright；不启动桌面 Electron 窗口。调试端口不属于 Agent 网络路径，发布构建关闭 Web 调试。
 
-MatePad Pro 已验证原版界面启动 OMP、发送消息并接收回复，以及应用重启后恢复默认 SSH 连接、重新打开远程会话。鸿蒙布局在主机 UI 同步和活动记录后继续由本机保存。其他 Agent 使用主机已有的安装和登录状态。
+MatePad Pro 已验证原版界面启动 OMP、外接键盘输入与回车发送、接收回复，以及应用重启后恢复默认 SSH 连接、重新打开远程会话。鸿蒙布局在主机 UI 同步和活动记录后继续由本机保存。其他 Agent 使用主机已有的安装和登录状态。
 
 当前边界：未验证其他 ABI、后台长期联网、全部桌面编辑器和浏览器功能。退出客户端仅释放连接，远程任务继续由主机持有。

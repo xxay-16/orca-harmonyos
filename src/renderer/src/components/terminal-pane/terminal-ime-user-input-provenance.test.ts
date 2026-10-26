@@ -16,6 +16,8 @@ import { subscribeToTerminalInputData } from './terminal-user-input-signal'
 
 const MAC_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
+const HARMONY_UA =
+  'Mozilla/5.0 (Tablet; OpenHarmony 7.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 ArkWeb/7.0.0.111'
 
 type ForwardedInput = { data: string; wasUserInput: boolean }
 
@@ -118,6 +120,40 @@ describe('IME and Hangul commits reach the PTY as user input', () => {
     insertText(textarea, 'insertText', '，')
     key(textarea, 'keyup', { key: ',', code: 'Comma', keyCode: 188 })
 
+    expect(forwarded).toEqual([{ data: '，', wasUserInput: true }])
+  })
+
+  for (const data of ['abc', '中文', '，']) {
+    for (const delayed of [false, true]) {
+      it(`forwards HarmonyOS physical-keyboard commits once: ${data}, delayed=${delayed}`, async () => {
+        Object.defineProperty(navigator, 'userAgent', { configurable: true, value: HARMONY_UA })
+        const { textarea, forwarded } = openPane()
+        key(textarea, 'keydown', { key: 'Process', code: '', keyCode: 229 })
+        if (delayed) {
+          await new Promise((resolve) => window.setTimeout(resolve, 0))
+        }
+        textarea.value = data
+        insertText(textarea, 'insertText', data)
+        key(textarea, 'keyup', { key: 'Process', code: '', keyCode: 229 })
+        key(textarea, 'keyup', { key: 'c', code: 'KeyC', keyCode: 67 })
+        await new Promise((resolve) => window.setTimeout(resolve, 0))
+        expect(forwarded).toEqual([{ data, wasUserInput: true }])
+        key(textarea, 'keydown', { key: 'Enter', code: 'Enter', keyCode: 13 })
+        expect(forwarded).toEqual([
+          { data, wasUserInput: true },
+          { data: '\r', wasUserInput: true }
+        ])
+      })
+    }
+  }
+
+  it('forwards HarmonyOS native punctuation instead of the raw physical key', () => {
+    Object.defineProperty(navigator, 'userAgent', { configurable: true, value: HARMONY_UA })
+    const { textarea, forwarded } = openPane()
+    key(textarea, 'keydown', { key: ',', code: 'Comma', keyCode: 188 })
+    textarea.value = '，'
+    insertText(textarea, 'insertText', '，')
+    key(textarea, 'keyup', { key: ',', code: 'Comma', keyCode: 188 })
     expect(forwarded).toEqual([{ data: '，', wasUserInput: true }])
   })
 
