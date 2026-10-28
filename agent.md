@@ -29,7 +29,7 @@
 | 原生 SSH               | [ssh_tunnel.cpp](native/harmonyos/entry/src/main/cpp/ssh_tunnel.cpp) 与 [CMakeLists.txt](native/harmonyos/entry/src/main/cpp/CMakeLists.txt) |
 | 构建与依赖下载         | [native/harmonyos/scripts](native/harmonyos/scripts)                                                                                         |
 
-涉及平台、进程、Shell、快捷键或原生模块前，阅读[跨平台约束](docs/reference/cross-platform-support.md)。涉及 Git 或代码评审行为前，阅读 [Git 工作流](docs/reference/git-workflow.md)。
+涉及平台、进程、Shell、快捷键或原生模块前，阅读[跨平台约束](docs/agents-md-refs/cross-platform-support.md)。涉及 Git 或代码评审行为前，阅读 [Git 工作流](docs/agents-md-refs/git-workflow.md)。
 
 ## 连接与凭据约束
 
