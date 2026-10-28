@@ -20,7 +20,8 @@ export function createWebFolderWorkspacesApi(): PreloadApi['folderWorkspaces'] {
       const owned = await callRuntimeResultWithOwner<{ folderWorkspaces: FolderWorkspace[] }>(
         'folderWorkspace.list'
       )
-      return owned.result.folderWorkspaces.map((row) => ({ ...row, executionHostId: owned.hostId }))
+      const { folderWorkspaces: rows } = owned.result
+      return rows.map((row) => ({ ...row, executionHostId: owned.hostId }))
     },
     getPathStatus: async (args) =>
       (

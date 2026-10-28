@@ -1,10 +1,10 @@
 {
-  "app": {
-    "bundleName": "com.xxay16.orcaremote",
-    "vendor": "xxay16",
-    "versionCode": 1000000,
-    "versionName": "0.1.0",
-    "icon": "$media:orca_icon",
-    "label": "$string:app_name"
+  app: {
+    bundleName: 'com.xxay16.orcaremote',
+    vendor: 'xxay16',
+    versionCode: 1000000,
+    versionName: '0.1.0',
+    icon: '$media:orca_icon',
+    label: '$string:app_name'
   }
 }

@@ -1,1 +1,1 @@
-{"name":"liborcassh.so","version":"0.1.0","types":"./index.d.ts"}
+{ name: 'liborcassh.so', version: '0.1.0', types: './index.d.ts' }

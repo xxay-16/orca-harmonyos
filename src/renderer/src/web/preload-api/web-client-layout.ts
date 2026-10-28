@@ -1,5 +1,7 @@
 import type { PreloadApi } from '../../../../preload/api-types'
 import type { PersistedUIState } from '../../../../shared/persisted-ui-state-types'
+import type { PairedUiState } from '../../../../shared/pairing-local-ui-fields'
+import { mergeHostWebUIState } from './web-preference-normalization'
 
 type LayoutFields = Pick<
   PersistedUIState,
@@ -17,6 +19,17 @@ export function readClientLayout(state: PersistedUIState): LayoutFields {
     sidebarWidth: state.sidebarWidth,
     setupGuideSidebarDismissed: state.setupGuideSidebarDismissed,
     statusBarItems: state.statusBarItems
+  }
+}
+
+export function mergeClientLayout(
+  local: PersistedUIState,
+  incoming: PairedUiState,
+  clientLocalLayout: boolean
+): PersistedUIState {
+  return {
+    ...mergeHostWebUIState(local, incoming),
+    ...(clientLocalLayout ? readClientLayout(local) : {})
   }
 }
 

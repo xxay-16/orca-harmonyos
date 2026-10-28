@@ -1,39 +1,37 @@
 {
-  "apiType": "stageMode",
-  "buildOption": {
-    "externalNativeOptions": {
-      "path": "./src/main/cpp/CMakeLists.txt",
-      "arguments": "",
-      "cppFlags": "",
-      "abiFilters": ["arm64-v8a"]
+  apiType: 'stageMode',
+  buildOption: {
+    externalNativeOptions: {
+      path: './src/main/cpp/CMakeLists.txt',
+      arguments: '',
+      cppFlags: '',
+      abiFilters: ['arm64-v8a']
     },
-    "resOptions": {
-      "copyCodeResource": {
-        "enable": false
+    resOptions: {
+      copyCodeResource: {
+        enable: false
       }
     }
   },
-  "buildOptionSet": [
+  buildOptionSet: [
     {
-      "name": "release",
-      "arkOptions": {
-        "obfuscation": {
-          "ruleOptions": {
-            "enable": false,
-            "files": [
-              "./obfuscation-rules.txt"
-            ]
+      name: 'release',
+      arkOptions: {
+        obfuscation: {
+          ruleOptions: {
+            enable: false,
+            files: ['./obfuscation-rules.txt']
           }
         }
       }
-    },
+    }
   ],
-  "targets": [
+  targets: [
     {
-      "name": "default"
+      name: 'default'
     },
     {
-      "name": "ohosTest",
+      name: 'ohosTest'
     }
   ]
 }

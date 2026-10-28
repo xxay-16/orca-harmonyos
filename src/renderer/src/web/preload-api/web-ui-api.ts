@@ -21,7 +21,6 @@ import {
 import {
   mergeContextualTourSeenIds,
   mergeFeatureInteractionState,
-  mergeHostWebUIState,
   mergeOsc52ClipboardNoticePending,
   mergeWebUIState
 } from './web-preference-normalization'
@@ -29,7 +28,7 @@ import { readLocalWebUIState } from './web-preferences-store'
 import { callRuntimeResult } from './web-runtime-calls'
 import { requireActiveEnvironmentOrNull } from './web-runtime-session'
 import { UI_STORAGE_KEY, noopUnsubscribe, writeJson } from './web-storage'
-import { readClientLayout, omitClientLayout } from './web-client-layout'
+import { mergeClientLayout, omitClientLayout } from './web-client-layout'
 
 /** Combines browser-local preferences with host persistence; acknowledged writes remain distinct from best-effort writes. */
 export function createWebUiApi(options: { clientLocalLayout?: boolean } = {}): PreloadApi['ui'] {
@@ -59,8 +58,7 @@ export function createWebUiApi(options: { clientLocalLayout?: boolean } = {}): P
         }
         const local = readLocalWebUIState()
         const next = {
-          ...mergeHostWebUIState(local, result.ui),
-          ...(options.clientLocalLayout ? readClientLayout(local) : {}),
+          ...mergeClientLayout(local, result.ui, options.clientLocalLayout === true),
           osc52ClipboardDefaultOnNoticePending: mergeOsc52ClipboardNoticePending(local, result.ui),
           featureInteractions: mergeFeatureInteractionState(
             local.featureInteractions,
@@ -129,8 +127,7 @@ export function createWebUiApi(options: { clientLocalLayout?: boolean } = {}): P
         )
         const local = readLocalWebUIState()
         const next = {
-          ...mergeHostWebUIState(local, result.ui),
-          ...(options.clientLocalLayout ? readClientLayout(local) : {}),
+          ...mergeClientLayout(local, result.ui, options.clientLocalLayout === true),
           osc52ClipboardDefaultOnNoticePending: mergeOsc52ClipboardNoticePending(local, result.ui),
           featureInteractions: mergeFeatureInteractionState(
             local.featureInteractions,
