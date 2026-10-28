@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ProviderRateLimits } from '../../../../shared/rate-limit-types'
+import { formatCurrencyAmount } from '../../../../shared/currency-format'
 
 const compactMessages = vi.hoisted(() => ({ balance: '' }))
 
@@ -128,15 +129,15 @@ function claudeDisabledCredits(): ProviderRateLimits {
 
 describe('ProviderSegment extra-usage balance token', () => {
   it.each([
-    ['Spanish', 'saldo {{value0}}', 'saldo $12.40'],
-    ['French', 'solde {{value0}}', 'solde $12.40']
-  ])('lets %s put the balance label before its amount', async (_locale, message, expected) => {
+    ['Spanish', 'saldo {{value0}}', 'saldo'],
+    ['French', 'solde {{value0}}', 'solde']
+  ])('lets %s put the balance label before its amount', async (_locale, message, label) => {
     compactMessages.balance = message
     const { ProviderSegment } = await import('./StatusBar')
     const markup = renderToStaticMarkup(
       <ProviderSegment p={openCodeGo(100)} compact={false} display="used" />
     )
-    expect(markup).toContain(expected)
+    expect(markup).toContain(`${label} ${formatCurrencyAmount(12.4, 'USD')}`)
     expect(markup).not.toContain('{{value0}}')
   })
 
