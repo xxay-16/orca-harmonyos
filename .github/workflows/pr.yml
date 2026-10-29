@@ -171,7 +171,7 @@ jobs:
     needs: [code_paths]
     if: needs.code_paths.outputs.static_analysis == 'true' || needs.code_paths.outputs.typecheck == 'true'
     # Leave headroom for typechecking and overlapping checks.
-    runs-on: blacksmith-8vcpu-ubuntu-2404
+    runs-on: ${{ github.repository == 'stablyai/orca' && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04' }}
     outputs:
       shards: ${{ steps.unit-plan.outputs.shards }}
       managed_hook_node18: ${{ steps.managed_hook_node18.outcome }}
@@ -581,8 +581,8 @@ jobs:
       needs.code_paths.result == 'success' &&
       needs.code_paths.outputs.git_compatibility == 'true' &&
       needs.preflight.result == 'success'
-    # Three parallel lanes (two through Docker) exceed real-Git test timeouts on 4-vCPU hosted runners.
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Forks serialize the lanes to stay within hosted-runner real-Git timeouts.
+    runs-on: ${{ github.repository == 'stablyai/orca' && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-24.04' }}
 
     steps:
       - name: Checkout
@@ -597,6 +597,7 @@ jobs:
       - name: Verify Git binary compatibility matrix
         env:
           ORCA_BACKGROUND_LAUNCH: '1'
+          ORCA_GIT_COMPAT_PARALLEL: ${{ github.repository == 'stablyai/orca' }}
         run: |
           specs=(
             "alpine/git:edge-2.38.1|2.38.1"
@@ -608,6 +609,7 @@ jobs:
           done
 
           pids=()
+          status=0
           (
             ORCA_GIT_COMPAT_BINARY="$HOME/.cache/orca-git-compat/git-2.25.5/git" \
               GIT_EXEC_PATH="$HOME/.cache/orca-git-compat/git-2.25.5" \
@@ -618,6 +620,7 @@ jobs:
               src/main/git/worktree-rebase-update-refs-real-git.test.ts
           ) &
           pids+=("$!")
+          if [ "$ORCA_GIT_COMPAT_PARALLEL" != true ]; then wait "$!" || status=1; fi
 
           for spec in "${specs[@]}"; do
             (
@@ -630,9 +633,9 @@ jobs:
                 src/main/git/worktree-rebase-update-refs-real-git.test.ts
             ) &
             pids+=("$!")
+            if [ "$ORCA_GIT_COMPAT_PARALLEL" != true ]; then wait "$!" || status=1; fi
           done
 
-          status=0
           for pid in "${pids[@]}"; do
             wait "$pid" || status=1
           done

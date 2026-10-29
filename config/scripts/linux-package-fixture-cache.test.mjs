@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { runProcessSync } from '@orca/process-host'
 import { classifyPrJobs } from './pr-code-change-scope.mjs'
+import { compileAggregateExpression } from './pr-aggregate-gate-context.mjs'
 
 const action = parse(
   readFileSync('.github/actions/prepare-linux-package-fixture/action.yml', 'utf8')
@@ -160,7 +161,13 @@ it.each([
   const warm = parse(readFileSync(source, 'utf8')).jobs['warm-linux-package-fixtures']
   const context = { github: { event_name: event } }
   expect(warm['runs-on']).toBe('${{ matrix.runner }}')
-  expect(warm.strategy.matrix.runner).toEqual(['blacksmith-4vcpu-ubuntu-2404', 'ubuntu-24.04'])
+  expect(
+    compileAggregateExpression(warm.strategy.matrix.runner, ['github'])({
+      github: { repository: 'stablyai/orca' }
+    })
+      .values()
+      .map((item) => item.value)
+  ).toEqual(['blacksmith-4vcpu-ubuntu-2404', 'ubuntu-24.04'])
   expect(warm.steps.map((step) => step.uses)).toEqual([
     'actions/checkout@v6',
     './.github/actions/prepare-linux-package-fixture',

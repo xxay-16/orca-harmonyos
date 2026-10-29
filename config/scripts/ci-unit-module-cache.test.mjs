@@ -196,18 +196,27 @@ it('retains four workers on ARM and the four-core x64 unit runners', () => {
     ['X64', 'blacksmith-4vcpu-ubuntu-2404'],
     ['X64', 'ubuntu-24.04']
   ]) {
-    expect(runInNewContext(expression, { runner: { arch }, inputs: { runner } })).toBe(
-      '--maxWorkers=4'
-    )
+    expect(
+      runInNewContext(expression, {
+        runner: { arch },
+        inputs: { runner },
+        github: { repository: 'stablyai/orca' }
+      })
+    ).toBe('--maxWorkers=4')
   }
   expect(
     runInNewContext(expression, {
       runner: { arch: 'X64' },
-      inputs: { runner: 'blacksmith-8vcpu-ubuntu-2404' }
+      inputs: { runner: 'blacksmith-8vcpu-ubuntu-2404' },
+      github: { repository: 'stablyai/orca' }
     })
   ).toBe('--maxWorkers=8')
   expect(
-    runInNewContext(expression, { runner: { arch: 'X64' }, inputs: { runner: 'ubuntu-latest' } })
+    runInNewContext(expression, {
+      runner: { arch: 'X64' },
+      inputs: { runner: 'ubuntu-latest' },
+      github: { repository: 'stablyai/orca' }
+    })
   ).toBe('')
 })
 

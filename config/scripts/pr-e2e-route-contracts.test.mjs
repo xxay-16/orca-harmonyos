@@ -12,6 +12,7 @@ import {
   selectGeneralE2eSpecs
 } from './ci-e2e-job-selection.mjs'
 import { classifyPrJobs } from './pr-code-change-scope.mjs'
+import { compileAggregateExpression } from './pr-aggregate-gate-context.mjs'
 import { testImportClosure } from './e2e-test-import-closure.mjs'
 import { isLayoutOracleSource, LAYOUT_ORACLE_E2E_SPECS } from './pr-layout-oracle-route.mjs'
 import {
@@ -284,7 +285,11 @@ describe('ssh-browser-e2e-routing', () => {
     const run = job.steps.find(
       (step) => step.name === 'Run Docker SSH browser network route journeys'
     )
-    expect(job['runs-on']).toBe('blacksmith-4vcpu-ubuntu-2404')
+    expect(
+      compileAggregateExpression(job['runs-on'], ['github'])({
+        github: { repository: 'stablyai/orca' }
+      }).coerceString()
+    ).toBe('blacksmith-4vcpu-ubuntu-2404')
     expect(job.if).toContain("inputs.test_files == ''")
     expect(job.if).toContain(spec)
     expect(install.with['native-runtime']).toBe('node')

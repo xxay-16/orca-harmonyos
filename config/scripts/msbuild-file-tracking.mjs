@@ -10,5 +10,12 @@ export function disableMsbuildFileTrackingOnWindows(
   ) {
     env.TrackFileAccess = 'false'
   }
+  // MSBuild still cleans tracking logs with tracking disabled; IntDir already separates projects.
+  if (
+    platform === 'win32' &&
+    !Object.keys(env).some((key) => key.toLowerCase() === 'tloglocation')
+  ) {
+    env.TLogLocation = '$(IntDir)'
+  }
   return env
 }
