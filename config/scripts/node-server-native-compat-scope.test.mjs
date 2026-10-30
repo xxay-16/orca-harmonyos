@@ -331,7 +331,7 @@ it('limits test-only native skip evidence to ordinary pull requests', () => {
   }
   expect(workflow.on).toHaveProperty('workflow_dispatch')
   expect(workflow.on).toHaveProperty('workflow_call')
-  expect(workflow.on.schedule).toHaveLength(1)
+  expect(workflow.on.schedule).toBeUndefined()
 })
 
 it('configures server glibc 2.28 slots and the glibc 2.17 compatibility lane', () => {

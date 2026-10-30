@@ -1,0 +1,77 @@
+name: HarmonyOS Remote
+
+on:
+  push:
+    branches: [main]
+    paths: &harmonyos_paths
+      - 'src/**'
+      - 'native/harmonyos/**'
+      - 'config/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'README.md'
+      - 'agent.md'
+      - 'AGENTS.md'
+      - '.github/actions/**'
+      - '.github/workflows/harmonyos.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    paths: *harmonyos_paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harmonyos-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  renderer:
+    name: Build and verify HarmonyOS remote client
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ORCA_BACKGROUND_LAUNCH: '1'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install-node-dependencies
+        with:
+          native-runtime: none
+          cache-pnpm-store: 'false'
+      - name: Typecheck the renderer
+        run: node config/scripts/run-typecheck-projects-in-parallel.mjs --project=config/tsconfig.tc.web.json --compiler=native
+      - name: Test SSH bridge, remote workspaces, layout and keyboard input
+        run: >-
+          pnpm exec vitest run --config config/vitest.config.ts --maxWorkers=2
+          src/renderer/src/harmony/native-bridge.test.ts
+          src/renderer/src/harmony/client-preferences.test.ts
+          src/renderer/src/web/web-runtime-client.test.ts
+          src/renderer/src/web/web-runtime-endpoint-client.test.ts
+          src/renderer/src/web/web-runtime-environment-token.test.ts
+          src/renderer/src/web/web-preload-api-folder-workspaces.test.ts
+          src/renderer/src/web/web-preload-api-ui-pairing-local-fields.test.ts
+          src/renderer/src/web/web-browser-platform.test.ts
+          src/renderer/src/store/adopt-from-endpoint.test.ts
+          src/renderer/src/components/terminal-pane/terminal-ime-user-input-provenance.test.ts
+          src/renderer/src/components/terminal-pane/xterm-bypass-policy.test.ts
+          src/renderer/src/components/terminal-pane/xterm-bypass-policy-non-mac.test.ts
+          src/renderer/src/components/terminal-pane/terminal-ime-xterm-consumed-key-commit.test.ts
+          src/renderer/src/components/terminal-pane/terminal-ime-xterm-linux-native-trace-replay.test.ts
+          src/renderer/src/components/terminal-pane/terminal-ios-hangul-preedit-coexistence.test.ts
+          tests/e2e/structured-chat-owner-status-activation.unit.test.ts
+          tests/e2e/structured-attention-prompt-relay.unit.test.ts
+          src/renderer/src/components/status-bar/provider-segment-balance.test.tsx
+          config/scripts/harmonyos-ci.test.mjs
+      - name: Build ArkWeb resources
+        run: pnpm run build:harmonyos:web
+      - uses: actions/upload-artifact@v7
+        with:
+          name: harmonyos-renderer
+          path: native/harmonyos/entry/src/main/resources/rawfile/console/
+          retention-days: 7
+          if-no-files-found: error

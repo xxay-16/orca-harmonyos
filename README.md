@@ -112,6 +112,14 @@ pnpm run check:code-quality:changed -- origin/main
 
 涉及键盘的修改还需运行输入法回归测试，并使用实际外接键盘验证；仅通过 CDP 模拟按键不足以证明鸿蒙输入法链路正常。完整的测试文件和真机检查项见 [agent.md](agent.md#验证要求)。
 
+## GitHub Actions
+
+[HarmonyOS Remote](.github/workflows/harmonyos.yml) 在 `main` 推送和相关 PR 中运行渲染器类型检查、原生桥与远程工作区回归、布局及键盘测试，并构建 ArkWeb 资源。
+
+CI 产物 `harmonyos-renderer` 是前端资源，不能直接安装；HAP 仍需使用本地 DevEco SDK 构建和签名，并完成真机验证。
+
+桌面全量单元测试、E2E、性能测试和跨平台缓存预热已取消定时运行，可在 Actions 中选择对应工作流，通过 **Run workflow** 手动执行。常规 PR 保留仓库基础检查及按文件变化触发的专项检查，不再自动运行上游桌面全量单元测试。
+
 ## 反馈与许可证
 
 鸿蒙适配问题请提交到[本仓库 Issues](https://github.com/xxay-16/orca-harmonyos/issues)，附设备型号、系统版本、复现步骤和脱敏日志。

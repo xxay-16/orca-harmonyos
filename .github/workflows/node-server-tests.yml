@@ -30,7 +30,7 @@ on:
       fast_runners:
         description: Use Blacksmith where the platform and architecture are available
         type: boolean
-        default: true
+        default: false
   # Release and dev builds qualify every platform for the template they ship.
   workflow_call:
     inputs:
@@ -45,10 +45,8 @@ on:
       fast_runners:
         description: Use Blacksmith where the platform and architecture are available
         type: boolean
-        default: true
+        default: false
   # Requalify fresh builds daily; publish missing immutable Windows cache keys.
-  schedule:
-    - cron: '30 11 * * *'
 
 permissions:
   contents: read

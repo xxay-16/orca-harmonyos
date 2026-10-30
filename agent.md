@@ -125,6 +125,8 @@ pnpm exec vitest run --config config/vitest.config.ts @keyboardTests
 
 ## 提交与交付
 
+默认 GitHub Actions 入口是 `.github/workflows/harmonyos.yml`，检查鸿蒙渲染器、原生桥、远程工作区、布局和键盘链路。CI 仅产出 ArkWeb 资源，不能代替本地 HAP 构建、签名和真机测试。上游桌面全量测试与缓存预热保留为手动工作流；同步上游时保留这一范围，不重新启用桌面定时全量任务或 fork PR 的全量单元测试。
+
 - 保持改动聚焦，使用具体文件名和检查过的类型；新增测试应复现真实行为或故障。
 - 只暂存当前任务的文件，保留无关的用户改动和未跟踪文件。
 - 新建工作分支默认使用 `codex/` 前缀；用户指定分支时遵从用户要求。推送、创建 PR 或合并按当前会话中的用户授权执行，不默认强制推送。

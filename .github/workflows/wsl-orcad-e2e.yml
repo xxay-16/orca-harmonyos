@@ -45,8 +45,6 @@ on:
         type: choice
         options: [full, ubuntu-canary]
         default: full
-  schedule:
-    - cron: '45 11 * * *'
 
 permissions:
   contents: read

@@ -2,6 +2,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
+import { Lexer, Parser } from '@actions/expressions'
 import { scanSourceTree, stripComments } from '../../src/shared/source-scan/source-tree-scan'
 import { classifyPrJobs } from './pr-code-change-scope.mjs'
 import { WINDOWS_BOUNDARY_TESTS } from './pr-package-test-paths.mjs'
@@ -157,7 +158,35 @@ export function couldRunOnWindows(runsOn) {
       : Array.isArray(runsOn)
         ? runsOn
         : [...(runsOn?.labels ?? []), runsOn?.group ?? ''].flat()
-  return labels.some((label) => /windows/i.test(String(label)) || String(label).includes('${{'))
+  return labels.some((label) => {
+    const value = String(label)
+    if (!value.includes('${{')) {
+      return /windows/i.test(value)
+    }
+    try {
+      const source = value.replace(/^\$\{\{\s*|\s*\}\}$/g, '')
+      const ast = new Parser(
+        new Lexer(source).lex().tokens,
+        ['github', 'matrix', 'inputs', 'vars'],
+        []
+      ).parse()
+      const condition = ast.args?.[0]
+      if (
+        ast.operator?.lexeme !== '||' ||
+        ast.args.length !== 2 ||
+        condition?.operator?.lexeme !== '&&' ||
+        condition.args.length !== 2
+      ) {
+        return true
+      }
+      const alternatives = [condition.args[1].literal?.value, ast.args[1].literal?.value]
+      return alternatives.some(
+        (candidate) => typeof candidate !== 'string' || /windows/i.test(candidate)
+      )
+    } catch {
+      return true
+    }
+  })
 }
 
 /** The Windows job's curated files: the boundary list plus any argv the lane steps spell out. */
@@ -408,6 +437,26 @@ describe('Windows runner detection', () => {
     expect(couldRunOnWindows('ubuntu-latest')).toBe(false)
     expect(couldRunOnWindows(['self-hosted', 'linux'])).toBe(false)
     expect(couldRunOnWindows(undefined)).toBe(false)
+  })
+
+  it('resolves literal runner alternatives while keeping unknown branches Windows-eligible', () => {
+    expect(
+      couldRunOnWindows(
+        "${{ github.repository == 'stablyai/orca' && 'blacksmith-8vcpu-ubuntu-2404' || 'ubuntu-24.04' }}"
+      )
+    ).toBe(false)
+    expect(
+      couldRunOnWindows("${{ matrix.os == 'windows' && 'windows-2022' || 'ubuntu-24.04' }}")
+    ).toBe(true)
+    expect(
+      couldRunOnWindows("${{ matrix.os == 'linux' && 'ubuntu-24.04' || matrix.runner }}")
+    ).toBe(true)
+    expect(
+      couldRunOnWindows(
+        "${{ inputs.a && 'windows-2022' || inputs.b && 'ubuntu-24.04' || 'ubuntu-22.04' }}"
+      )
+    ).toBe(true)
+    expect(couldRunOnWindows('${{ invalid( }}')).toBe(true)
   })
 })
 

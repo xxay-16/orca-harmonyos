@@ -14,11 +14,11 @@ function runnerFor(job, os, fast, event = 'workflow_dispatch') {
   }).coerceString()
 }
 
-it('defaults reusable and manual qualification to Blacksmith', () => {
+it('defaults reusable and manual qualification to hosted runners', () => {
   for (const trigger of ['workflow_call', 'workflow_dispatch']) {
     expect(workflow.on[trigger].inputs.fast_runners).toMatchObject({
       type: 'boolean',
-      default: true
+      default: false
     })
   }
 })

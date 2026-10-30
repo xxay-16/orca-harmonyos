@@ -11,6 +11,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
 import { parse } from 'yaml'
@@ -21,11 +22,16 @@ import {
 } from './headless-detector-compiler-cache.mjs'
 import { collectNodeServerInputs } from './node-server-change-scope.mjs'
 import { runProcessSync } from '@orca/process-host'
+import { removeTreeSync } from '../../src/shared/windows-transient-lock-removal.ts'
 
 const temporary = []
+const stopCompilers = []
 afterEach(() => {
+  for (const stop of stopCompilers.splice(0)) {
+    stop()
+  }
   for (const dir of temporary.splice(0)) {
-    rmSync(dir, { recursive: true, force: true })
+    removeTreeSync(dir)
   }
 })
 function fixture() {
@@ -69,6 +75,8 @@ it('separates policy, Node, platform and architecture identities with the same a
 it('activates the compiler and workspace-policy parser and preserves import graph behavior', async () => {
   const { root, identity } = fixture()
   expect(await activateCompilerCache({ root, identity })).toEqual({ available: true })
+  const fixtureRequire = createRequire(join(root, 'package.json'))
+  stopCompilers.push(() => fixtureRequire('esbuild').stop())
   expect(readdirSync(join(root, 'node_modules')).sort()).toEqual(['@esbuild', 'esbuild', 'yaml'])
   for (const name of [
     'node-server-change-scope',
@@ -210,21 +218,5 @@ it('uses exact optional restores, seeds only main and retains full dependency fa
   ).toBeGreaterThan(
     warmSteps.findIndex((step) => step.uses === './.github/actions/install-node-dependencies')
   )
-  for (const event of ['push', 'pull_request']) {
-    expect(warmer.on[event].paths).toContain('.github/actions/prepare-headless-compiler/**')
-  }
-  const inputs = [
-    ...steps.find((step) => step.id === 'identity').env.COMPILER_POLICY_HASH.matchAll(/'([^']+)'/g)
-  ].map((match) => match[1])
-  for (const input of inputs) {
-    expect(
-      warmer.on.push.paths.some(
-        (pattern) =>
-          pattern === input ||
-          (pattern.endsWith('/**') && input.startsWith(pattern.slice(0, -2))) ||
-          (pattern.endsWith('*') && input.startsWith(pattern.slice(0, -1)))
-      ),
-      input
-    ).toBe(true)
-  }
+  expect(Object.keys(warmer.on)).toEqual(['workflow_dispatch'])
 })

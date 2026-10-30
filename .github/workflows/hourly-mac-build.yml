@@ -3,9 +3,6 @@ name: Hourly macOS Dev Build
 # Publish signed/notarized main builds to orca-hourly; notarization preserves TCC grants across updates. PR/release gates own validation. Separate repo avoids hourly tags crowding stable/RC Atom entries. Provision shared HOURLY_RELEASE_APP_ID/private key with setup-hourly-release-token.sh and App write access there. Refresh one-hour token after read-only build; a retry may still outlive it, leaving only an invisible draft whose build number remains reserved until manifests validate.
 
 on:
-  schedule:
-    # Top of every hour. Skipped automatically when main has not moved.
-    - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       force:

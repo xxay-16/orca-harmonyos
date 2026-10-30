@@ -315,39 +315,16 @@ describe('CI dependency download caches', () => {
     }
   })
 
-  it('keeps PR warmer validation within the workflow family that runs it', () => {
+  it('keeps desktop cache producers available only through manual dispatch', () => {
     const shared = workflow('ci-cache-warmup')
     const platforms = workflow('ci-cache-warmup-platforms')
-    expect(shared.on.pull_request.paths).toEqual([
-      '.github/workflows/ci-cache-warmup.yml',
-      '.github/actions/prepare-headless-compiler/**',
-      'config/scripts/headless-detector-compiler-cache.mjs',
-      '.github/actions/prepare-wayland-clipboard/**'
-    ])
-    expect(platforms.on.pull_request.paths).toEqual([
-      '.github/workflows/ci-cache-warmup-platforms.yml',
-      '.github/workflows/ci-cache-warmup-platform-jobs.yml'
-    ])
     expect(platforms.concurrency).toEqual({
       group: 'ci-cache-warmup-platforms-${{ github.event.pull_request.number || github.ref }}',
       'cancel-in-progress': "${{ github.event_name == 'pull_request' }}"
     })
     expect(shared.jobs['warm-platforms'].uses).toBe(platforms.jobs['warm-platforms'].uses)
-    expect(shared.on.schedule).toEqual([{ cron: '41 */6 * * *' }])
-    expect(shared.on).toHaveProperty('workflow_dispatch')
     for (const producer of [shared, platforms]) {
-      expect(producer.on.push.branches).toEqual(['main'])
-      expect(producer.on.push.paths).toEqual(
-        expect.arrayContaining([
-          '.github/workflows/ci-cache-warmup.yml',
-          '.github/workflows/ci-cache-warmup-platforms.yml',
-          '.github/workflows/ci-cache-warmup-platform-jobs.yml',
-          '.github/actions/install-node-dependencies/**',
-          '.github/actions/prepare-native-runtime/**',
-          'native/windows-security/**',
-          'pnpm-lock.yaml'
-        ])
-      )
+      expect(Object.keys(producer.on)).toEqual(['workflow_dispatch'])
     }
   })
 
@@ -453,7 +430,8 @@ describe('CI dependency download caches', () => {
     for (const path of [
       ...inputs,
       '.github/actions/install-node-dependencies/action.yml',
-      ...workflow('ci-cache-warmup-platforms').on.pull_request.paths,
+      '.github/workflows/ci-cache-warmup-platforms.yml',
+      '.github/workflows/ci-cache-warmup-platform-jobs.yml',
       '.github/workflows/ci-cache-warmup.yml'
     ]) {
       expect(classifyPrJobs([path], { allowMobileCiTools: true }), path).toMatchObject({

@@ -22,8 +22,6 @@ on:
       - 'src/main/computer/**'
       - 'src/shared/computer-use-*.ts'
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
 
 concurrency:
   group: computer-macos-native-${{ github.event.pull_request.number || github.ref }}

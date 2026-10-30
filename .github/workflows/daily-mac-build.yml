@@ -3,9 +3,6 @@ name: Daily macOS Dev Build
 # Publish daily main builds to orca-daily, separate from hourly and stable/RC feeds. Sign/notarize for update-preserved macOS TCC grants; PR/release pipelines own blocking validation, with E2E detached after publish. Cron 18:15 UTC means 10:15 PST/11:15 PDT, offset from hourly. Use the shared hourly App with write access to orca-daily (setup-hourly-release-token.sh/setup-daily-release-repo.sh). Mint tokens again after build and upload because 2×45min retry can exceed their 1h life. Keep releases draft until manifests verify; drafts retain build numbers.
 
 on:
-  schedule:
-    # Once a day, late morning Pacific. Single cron — no DST twin, no clock gate.
-    - cron: '15 18 * * *'
   workflow_dispatch:
     inputs:
       force:
